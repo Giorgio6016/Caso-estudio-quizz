@@ -33,10 +33,9 @@ class Estudiante extends Model
      */
     public function grupos(): BelongsToMany
     {
-        return $this->belongsToMany(Grupo::class, 'estudiante_matriculados')
+        return $this->belongsToMany(Grupo::class, 'estudiantes_matriculados')
             ->using(EstudianteMatriculado::class)
-            ->as('matricula')
-            ->withPivot('id', 'nota')
+            ->withPivot('nota')
             ->withTimestamps();
     }
 

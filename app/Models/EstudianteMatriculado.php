@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\Pivot;
 #[Fillable(['grupo_id', 'estudiante_id', 'nota'])]
 class EstudianteMatriculado extends Pivot
 {
-    protected $table = 'estudiante_matriculados';
+    protected $table = 'estudiantes_matriculados';
 
     public $incrementing = true;
 

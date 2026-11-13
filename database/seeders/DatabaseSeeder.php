@@ -23,7 +23,7 @@ class DatabaseSeeder extends Seeder
 
         foreach ($estudiantes as $estudiante) {
             $grupo->matricularEstudiante($estudiante);
-            $grupo->registrarNota($estudiante, fake()->randomFloat(2, 0, 100));
+            $grupo->registrarNota($estudiante, fake()->randomFloat(1, 0, 10));
         }
     }
 }

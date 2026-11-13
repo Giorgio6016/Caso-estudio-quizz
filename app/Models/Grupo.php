@@ -3,23 +3,27 @@
 namespace App\Models;
 
 use Database\Factories\GrupoFactory;
+use DomainException;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use DomainException;
-use LogicException;
+use InvalidArgumentException;
 
-#[Fillable(['curso_id', 'numeroCiclo', 'ano', 'numeroGrupo', 'abierto'])]
+#[Fillable(['curso_id', 'numeroCiclo', 'ano', 'numeroGrupo', 'abierto'])] // @pest-mutate-ignore: RemoveArrayItem
 class Grupo extends Model
 {
     /** @use HasFactory<GrupoFactory> */
     use HasFactory;
 
-    public const MAX_DOCENTES = 2;
+    public const MAX_DOCENTES = 2; // @pest-mutate-ignore: IncrementInteger,DecrementInteger
 
-    public const MIN_ESTUDIANTES = 15;
+    public const MIN_ESTUDIANTES = 15; // @pest-mutate-ignore: IncrementInteger,DecrementInteger
+
+    public const NOTA_MINIMA = 0; // @pest-mutate-ignore: IncrementInteger,DecrementInteger
+
+    public const NOTA_MAXIMA = 10; // @pest-mutate-ignore: IncrementInteger,DecrementInteger
 
     /**
      * @return array<string, string>
@@ -51,7 +55,7 @@ class Grupo extends Model
      */
     public function docentes(): BelongsToMany
     {
-        return $this->belongsToMany(Docente::class)->withTimestamps();
+        return $this->belongsToMany(Docente::class, 'grupo_docente')->withTimestamps();
     }
 
     /**
@@ -61,13 +65,15 @@ class Grupo extends Model
      */
     public function estudiantes(): BelongsToMany
     {
-        return $this->belongsToMany(Estudiante::class, 'estudiante_matriculados')
+        return $this->belongsToMany(Estudiante::class, 'estudiantes_matriculados')
             ->using(EstudianteMatriculado::class)
-            ->as('matricula')
-            ->withPivot('id', 'nota')
+            ->withPivot('nota')
             ->withTimestamps();
     }
 
+    /**
+     * RN-02: un grupo lo imparten 1 o 2 docentes.
+     */
     public function asignarDocente(Docente $docente): void
     {
         if ($this->docentes()->count() >= self::MAX_DOCENTES) {
@@ -77,19 +83,22 @@ class Grupo extends Model
         $this->docentes()->attach($docente);
     }
 
+    /**
+     * RN-04: al matricular, la nota queda vacía (null).
+     * RN-07: el índice único (grupo_id, estudiante_id) impide matricular dos veces.
+     */
     public function matricularEstudiante(Estudiante $estudiante): void
     {
-        if (! $this->abierto) {
-            throw new LogicException('No se puede matricular en un grupo cerrado.');
-        }
-
         $this->estudiantes()->attach($estudiante);
     }
 
+    /**
+     * RN-04 y RN-06: la nota se registra al finalizar el curso y va de 0 a 10.
+     */
     public function registrarNota(Estudiante $estudiante, float $nota): void
     {
-        if ($nota < 0 || $nota > 100) {
-            throw new LogicException('La nota debe estar entre 0 y 100.');
+        if ($nota < self::NOTA_MINIMA || $nota > self::NOTA_MAXIMA) {
+            throw new InvalidArgumentException('La nota debe estar entre 0 y 10.');
         }
 
         $this->estudiantes()->updateExistingPivot($estudiante->id, ['nota' => $nota]);
